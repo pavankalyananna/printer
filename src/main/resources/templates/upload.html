@@ -1,0 +1,139 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <title>File Upload</title>
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
+    <style>
+        body {
+            background-color: #f8f9fa;
+        }
+        .container {
+            margin-top: 50px;
+            padding: 20px;
+            background-color: white;
+            border-radius: 8px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+        }
+        h1 {
+            color: #343a40;
+        }
+        .qr-code {
+            margin-top: 20px;
+            text-align: center;
+        }
+        .preview {
+            margin-top: 20px;
+            text-align: center;
+        }
+        .preview img {
+            max-width: 150px; /* Smaller image preview */
+            height: auto;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            margin: 5px;
+        }
+        .preview iframe {
+            width: 150px; /* Smaller PDF preview */
+            height: 200px; /* Adjust height for PDF preview */
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            margin: 5px;
+        }
+        .upload-button {
+            margin-top: 20px; /* Space above the button */
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1 class="text-center">Upload PDF or Image</h1>
+        
+        <!-- Step 1: File Selection -->
+        <div id="fileSelection">
+            <div class="form-group">
+                <label for="file">Select a file:</label>
+                <input type="file" class="form-control-file" name="file" id="fileInput" accept="image/*,application/pdf" required />
+            </div>
+        </div>
+
+        <!-- Step 2: Color Selection -->
+        <div id="colorSelection" class="hidden">
+            <div class="form-group">
+                <label for="colorOption">Choose a color option:</label>
+                <select class="form-control" id="colorOption" required>
+                    <option value="">Select Color Option</option>
+                    <option value="color">Color</option>
+                    <option value="black">Black and White</option>
+                </select>
+            </div>
+        </div>
+
+        <!-- Step 3: File Preview -->
+        <div class="preview hidden" id="filePreview">
+            <h2>File Preview:</h2>
+            <div id="imagePreview"></div>
+            <div id="pdfPreview"></div>
+        </div>
+
+        <div class="upload-button hidden" id="uploadButtonContainer">
+            <button id="uploadButton" class="btn btn-primary">Upload</button>
+        </div>
+
+        <div th:if="${qrCodeImage}" class="qr-code">
+            <h2>Generated QR Code:</h2>
+            <img th:src="'data:image/png;base64,' + ${qrCodeImage}" alt="QR Code" class="img-fluid" />
+        </div>
+    </div>
+
+    <script src="https://code.jquery.com/jquery-3.5.1.slim.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.9.2/dist/umd/popper.min.js"></script>
+    <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
+    <script>
+        const fileInput = document.getElementById('fileInput');
+        const colorSelection = document.getElementById('colorSelection');
+        const colorOption = document.getElementById('colorOption');
+        const filePreview = document.getElementById('filePreview');
+        const imagePreview = document.getElementById('imagePreview');
+        const pdfPreview = document.getElementById('pdfPreview');
+        const uploadButtonContainer = document.getElementById('uploadButtonContainer');
+        const uploadButton = document.getElementById('uploadButton');
+
+        // Show color selection after file is selected
+        fileInput.addEventListener('change', function() {
+            if (fileInput.files.length > 0) {
+                colorSelection.classList.remove('hidden');
+                uploadButtonContainer.classList.remove('hidden');
+                const file = fileInput.files[0];
+                const fileURL = URL.createObjectURL(file);
+                
+                // Preview the file
+                if (file.type.startsWith('image/')) {
+                    imagePreview.innerHTML = `<img src="${fileURL}" alt="Image Preview" class="img-fluid" />`;
+                    pdfPreview.innerHTML = '';
+                } else if (file.type === 'application/pdf') {
+                    imagePreview.innerHTML = '';
+                    pdfPreview.innerHTML = `<iframe src="${fileURL}" frameborder="0"></iframe>`;
+                }
+            }
+        });
+
+        // Handle file upload
+        uploadButton.addEventListener('click', function() {
+            const formData = new FormData();
+            formData.append('file', fileInput.files[0]);
+            formData.append('colorOption', colorOption.value);
+
+            fetch('/upload', {
+                method: 'POST',
+                body: formData
+            })
+            .then(response => response.text())
+            .then(data => {
+                // Update the page with the new QR code
+                document.body.innerHTML = data; // Replace the body with the response
+            })
+            .catch(error => console.error('Error:', error));
+        });
+    </script>
+</body>
+</html>
